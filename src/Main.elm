@@ -107,8 +107,10 @@ view model =
         [ css "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.2.1/css/bulma.min.css"
         , div [ class "container" ]
             [ div [ class "columns" ]
-                [ div [ class "column is-one-third" ] [ noteList model.notes ]
-                , div [ class "column is-two-thirds" ] [ activeNote model ]
+                [ div [ class "column is-one-third" ]
+                    [ noteList model.notes ]
+                , div [ class "column is-two-thirds" ]
+                    [ activeNote model ]
                 ]
             ]
         ]
@@ -144,7 +146,9 @@ activeNote { notes, activeNote, isEditing } =
         noteContent =
             case isEditing of
                 True ->
-                    \str -> p [ class "control" ] [ textarea [ class "textarea" ] [ text str ] ]
+                    \str ->
+                        p [ class "control" ]
+                            [ textarea [ class "textarea" ] [ text str ] ]
 
                 False ->
                     Markdown.toHtml [ class "content" ]
@@ -158,8 +162,7 @@ activeNote { notes, activeNote, isEditing } =
     in
         div [ class "card is-fullwidth" ]
             [ header [ class "card-header" ]
-                [ h2 [ class "card-header-title" ] [ text title ]
-                ]
+                [ h2 [ class "card-header-title" ] [ text title ] ]
             , div [ class "card-content" ]
                 [ noteContent body
                 , p [ class "control" ]

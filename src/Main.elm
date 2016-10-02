@@ -56,8 +56,7 @@ init =
 initialPosts : Notes
 initialPosts =
     Dict.fromList <|
-        [ ( 2, Note "Lorem Ipsum" """
-# Test
+        [ ( 2, Note "Lorem Ipsum" """# Test
 Maecenas *feugiat* at elit sed gravida.
 """ )
         , ( 3, Note "Dolor Set" """Phasellus tincidunt fringilla rutrum.""" )

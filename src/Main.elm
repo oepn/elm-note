@@ -25,6 +25,7 @@ main =
 type alias Model =
     { notes : Notes
     , activeNote : NoteId
+    , isEditing : Bool
     }
 
 
@@ -48,7 +49,7 @@ type alias Markdown =
 
 init : ( Model, Cmd Msg )
 init =
-    ( Model initialPosts (firstKey initialPosts ? 1)
+    ( Model initialPosts (firstKey initialPosts ? 1) False
     , Cmd.none
     )
 
@@ -74,6 +75,7 @@ emptyNote =
 
 type Msg
     = SetActive NoteId
+    | ToggleEditing
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -81,6 +83,9 @@ update msg model =
     case msg of
         SetActive id ->
             ( { model | activeNote = id }, Cmd.none )
+
+        ToggleEditing ->
+            ( { model | isEditing = not model.isEditing }, Cmd.none )
 
 
 
@@ -129,18 +134,38 @@ noteListEntry ( id, { title, body } ) =
         ]
 
 
-activeNote : Model -> Html msg
-activeNote { notes, activeNote } =
+activeNote : Model -> Html Msg
+activeNote { notes, activeNote, isEditing } =
     let
         { title, body } =
             Dict.get activeNote notes ? emptyNote
+
+        noteContent : String -> Html msg
+        noteContent =
+            case isEditing of
+                True ->
+                    \str -> p [ class "control" ] [ textarea [ class "textarea" ] [ text str ] ]
+
+                False ->
+                    Markdown.toHtml [ class "content" ]
+
+        buttonTitle : String
+        buttonTitle =
+            if isEditing then
+                "Save"
+            else
+                "Edit"
     in
         div [ class "card is-fullwidth" ]
             [ header [ class "card-header" ]
                 [ h2 [ class "card-header-title" ] [ text title ]
                 ]
             , div [ class "card-content" ]
-                [ Markdown.toHtml [ class "content" ] body
+                [ noteContent body
+                , p [ class "control" ]
+                    [ button [ class "button", onClick ToggleEditing ]
+                        [ text buttonTitle ]
+                    ]
                 ]
             ]
 

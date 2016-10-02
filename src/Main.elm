@@ -100,9 +100,11 @@ view : Model -> Html Msg
 view model =
     div [ class "section" ]
         [ css "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.2.1/css/bulma.min.css"
-        , div [ class "columns" ]
-            [ div [ class "column is-one-third" ] [ noteList model.notes ]
-            , div [ class "column is-two-thirds" ] [ activeNote model ]
+        , div [ class "container" ]
+            [ div [ class "columns" ]
+                [ div [ class "column is-one-third" ] [ noteList model.notes ]
+                , div [ class "column is-two-thirds" ] [ activeNote model ]
+                ]
             ]
         ]
 

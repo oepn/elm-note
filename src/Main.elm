@@ -74,16 +74,12 @@ emptyNote =
 
 
 type Msg
-    = Nothing
-    | SetActive NoteId
+    = SetActive NoteId
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Nothing ->
-            ( model, Cmd.none )
-
         SetActive id ->
             ( { model | activeNote = id }, Cmd.none )
 

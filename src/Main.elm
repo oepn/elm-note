@@ -144,8 +144,7 @@ noteList notes =
 noteListEntry : ( NoteId, Note ) -> Html Msg
 noteListEntry ( id, { title, body } ) =
     a [ class "panel-block", onClick (SetActive id) ]
-        [ text title
-        ]
+        [ text title ]
 
 
 noteEditor : Model -> Html Msg
@@ -172,13 +171,14 @@ noteEditor { notes, activeId, isEditing } =
     in
         div [ class "card is-fullwidth" ]
             [ header [ class "card-header" ]
-                [ h2 [ class "card-header-title" ] [ text title ] ]
+                [ h2 [ class "card-header-title" ]
+                    [ text title ]
+                ]
             , div [ class "card-content" ]
-                [ noteContent body
-                , p [ class "control" ]
-                    [ button [ class "button", onClick ToggleEditing ]
-                        [ text buttonTitle ]
-                    ]
+                [ noteContent body ]
+            , footer [ class "card-footer" ]
+                [ a [ class "card-footer-item", onClick ToggleEditing ]
+                    [ text buttonTitle ]
                 ]
             ]
 

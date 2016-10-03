@@ -75,7 +75,8 @@ emptyNote =
 type Msg
     = SetActive NoteId
     | ToggleEditing
-    | UpdateNoteBody NoteId Markdown
+    | UpdateTitle NoteId String
+    | UpdateBody NoteId Markdown
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -87,12 +88,25 @@ update msg model =
         ToggleEditing ->
             ( { model | isEditing = not model.isEditing }, Cmd.none )
 
-        UpdateNoteBody id newBody ->
-            let
-                newNotes =
-                    Dict.update id (updateBody newBody) model.notes
-            in
-                ( { model | notes = newNotes }, Cmd.none )
+        UpdateTitle id title ->
+            ( { model | notes = updateNote id (updateTitle title) model.notes }
+            , Cmd.none
+            )
+
+        UpdateBody id body ->
+            ( { model | notes = updateNote id (updateBody body) model.notes }
+            , Cmd.none
+            )
+
+
+updateNote : NoteId -> (Maybe Note -> Maybe Note) -> Notes -> Notes
+updateNote id alter notes =
+    Dict.update id alter notes
+
+
+updateTitle : String -> Maybe Note -> Maybe Note
+updateTitle newTitle note =
+    Maybe.map (\note -> { note | title = newTitle }) note
 
 
 updateBody : Markdown -> Maybe Note -> Maybe Note
@@ -143,8 +157,7 @@ noteList notes =
 
 noteListEntry : ( NoteId, Note ) -> Html Msg
 noteListEntry ( id, { title, body } ) =
-    a [ class "panel-block", onClick (SetActive id) ]
-        [ text title ]
+    a [ class "panel-block", onClick (SetActive id) ] [ text title ]
 
 
 note : Model -> Html Msg
@@ -169,17 +182,22 @@ note { notes, activeId, isEditing } =
                 "Edit"
     in
         div [ class "card is-fullwidth" ]
-            [ header [ class "card-header" ]
-                [ h2 [ class "card-header-title" ]
-                    [ text note.title ]
-                ]
-            , div [ class "card-content" ]
-                [ noteInterface note ]
+            [ noteInterface note
             , footer [ class "card-footer" ]
                 [ a [ class "card-footer-item", onClick ToggleEditing ]
                     [ text buttonTitle ]
                 ]
             ]
+
+
+noteViewer : Note -> Html Msg
+noteViewer { title, body } =
+    div []
+        [ header [ class "card-header" ]
+            [ h2 [ class "card-header-title" ] [ text title ] ]
+        , div [ class "card-content" ]
+            [ Markdown.toHtmlWith markdownOptions [ class "content" ] body ]
+        ]
 
 
 markdownOptions : Markdown.Options
@@ -191,19 +209,27 @@ markdownOptions =
         { options | sanitize = True }
 
 
-noteViewer : Note -> Html Msg
-noteViewer { body } =
-    Markdown.toHtmlWith markdownOptions [ class "content" ] body
-
-
 noteEditor : NoteId -> Note -> Html Msg
-noteEditor noteId { body } =
-    p [ class "control" ]
-        [ textarea
-            [ class "textarea"
-            , onInput (UpdateNoteBody noteId)
+noteEditor noteId { title, body } =
+    div [ class "card-content" ]
+        [ label [ class "label" ] [ text "Title" ]
+        , p [ class "control" ]
+            [ input
+                [ type' "text"
+                , class "input"
+                , value title
+                , onInput (UpdateTitle noteId)
+                ]
+                []
             ]
-            [ text body ]
+        , label [ class "label" ] [ text "Body" ]
+        , p [ class "control" ]
+            [ textarea
+                [ class "textarea"
+                , onInput (UpdateBody noteId)
+                ]
+                [ text body ]
+            ]
         ]
 
 

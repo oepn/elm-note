@@ -122,7 +122,7 @@ view model =
                 [ div [ class "column is-one-third" ]
                     [ noteList model.notes ]
                 , div [ class "column is-two-thirds" ]
-                    [ noteEditor model ]
+                    [ note model ]
                 ]
             ]
         ]
@@ -147,20 +147,19 @@ noteListEntry ( id, { title, body } ) =
         [ text title ]
 
 
-noteEditor : Model -> Html Msg
-noteEditor { notes, activeId, isEditing } =
+note : Model -> Html Msg
+note { notes, activeId, isEditing } =
     let
-        { title, body } =
+        note : Note
+        note =
             Dict.get activeId notes ? emptyNote
 
-        noteContent : Markdown -> Html Msg
-        noteContent =
-            case isEditing of
-                True ->
-                    editNote activeId
-
-                False ->
-                    Markdown.toHtmlWith markdownOptions [ class "content" ]
+        noteInterface : Note -> Html Msg
+        noteInterface =
+            if isEditing then
+                noteEditor activeId
+            else
+                noteViewer
 
         buttonTitle : String
         buttonTitle =
@@ -172,10 +171,10 @@ noteEditor { notes, activeId, isEditing } =
         div [ class "card is-fullwidth" ]
             [ header [ class "card-header" ]
                 [ h2 [ class "card-header-title" ]
-                    [ text title ]
+                    [ text note.title ]
                 ]
             , div [ class "card-content" ]
-                [ noteContent body ]
+                [ noteInterface note ]
             , footer [ class "card-footer" ]
                 [ a [ class "card-footer-item", onClick ToggleEditing ]
                     [ text buttonTitle ]
@@ -192,14 +191,19 @@ markdownOptions =
         { options | sanitize = True }
 
 
-editNote : NoteId -> Markdown -> Html Msg
-editNote noteId markdown =
+noteViewer : Note -> Html Msg
+noteViewer { body } =
+    Markdown.toHtmlWith markdownOptions [ class "content" ] body
+
+
+noteEditor : NoteId -> Note -> Html Msg
+noteEditor noteId { body } =
     p [ class "control" ]
         [ textarea
             [ class "textarea"
             , onInput (UpdateNoteBody noteId)
             ]
-            [ text markdown ]
+            [ text body ]
         ]
 
 

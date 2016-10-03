@@ -24,7 +24,7 @@ main =
 
 type alias Model =
     { notes : Notes
-    , activeNote : NoteId
+    , activeId : NoteId
     , isEditing : Bool
     }
 
@@ -58,8 +58,7 @@ initialPosts : Notes
 initialPosts =
     Dict.fromList <|
         [ ( 2, Note "Lorem Ipsum" """# Test
-Maecenas *feugiat* at elit sed gravida.
-""" )
+Maecenas *feugiat* at elit sed gravida.""" )
         , ( 3, Note "Dolor Set" """Phasellus tincidunt fringilla rutrum.""" )
         ]
 
@@ -76,16 +75,29 @@ emptyNote =
 type Msg
     = SetActive NoteId
     | ToggleEditing
+    | UpdateNoteBody NoteId Markdown
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SetActive id ->
-            ( { model | activeNote = id }, Cmd.none )
+            ( { model | activeId = id }, Cmd.none )
 
         ToggleEditing ->
             ( { model | isEditing = not model.isEditing }, Cmd.none )
+
+        UpdateNoteBody id newBody ->
+            let
+                newNotes =
+                    Dict.update id (updateBody newBody) model.notes
+            in
+                ( { model | notes = newNotes }, Cmd.none )
+
+
+updateBody : Markdown -> Maybe Note -> Maybe Note
+updateBody newBody note =
+    Maybe.map (\note -> { note | body = newBody }) note
 
 
 
@@ -110,7 +122,7 @@ view model =
                 [ div [ class "column is-one-third" ]
                     [ noteList model.notes ]
                 , div [ class "column is-two-thirds" ]
-                    [ activeNote model ]
+                    [ noteEditor model ]
                 ]
             ]
         ]
@@ -136,19 +148,17 @@ noteListEntry ( id, { title, body } ) =
         ]
 
 
-activeNote : Model -> Html Msg
-activeNote { notes, activeNote, isEditing } =
+noteEditor : Model -> Html Msg
+noteEditor { notes, activeId, isEditing } =
     let
         { title, body } =
-            Dict.get activeNote notes ? emptyNote
+            Dict.get activeId notes ? emptyNote
 
-        noteContent : String -> Html msg
+        noteContent : Markdown -> Html Msg
         noteContent =
             case isEditing of
                 True ->
-                    \str ->
-                        p [ class "control" ]
-                            [ textarea [ class "textarea" ] [ text str ] ]
+                    editNote activeId
 
                 False ->
                     Markdown.toHtml [ class "content" ]
@@ -171,6 +181,17 @@ activeNote { notes, activeNote, isEditing } =
                     ]
                 ]
             ]
+
+
+editNote : NoteId -> Markdown -> Html Msg
+editNote noteId markdown =
+    p [ class "control" ]
+        [ textarea
+            [ class "textarea"
+            , onInput (UpdateNoteBody noteId)
+            ]
+            [ text markdown ]
+        ]
 
 
 

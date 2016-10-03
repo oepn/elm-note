@@ -161,7 +161,7 @@ noteEditor { notes, activeId, isEditing } =
                     editNote activeId
 
                 False ->
-                    Markdown.toHtml [ class "content" ]
+                    Markdown.toHtmlWith markdownOptions [ class "content" ]
 
         buttonTitle : String
         buttonTitle =
@@ -181,6 +181,15 @@ noteEditor { notes, activeId, isEditing } =
                     ]
                 ]
             ]
+
+
+markdownOptions : Markdown.Options
+markdownOptions =
+    let
+        options =
+            Markdown.defaultOptions
+    in
+        { options | sanitize = True }
 
 
 editNote : NoteId -> Markdown -> Html Msg

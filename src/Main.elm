@@ -9,6 +9,7 @@ import Html.Events exposing (..)
 import Markdown
 
 
+main : Program Never
 main =
     App.program
         { init = init

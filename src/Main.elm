@@ -6,16 +6,38 @@ import Html.App as App
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Markdown
+import Navigation
+import String
 
 
 main : Program Never
 main =
-    App.program
+    Navigation.program urlParser
         { init = init
         , view = view
         , update = update
+        , urlUpdate = urlUpdate
         , subscriptions = subscriptions
         }
+
+
+
+-- URL PARSERS
+
+
+toUrl : NoteId -> String
+toUrl id =
+    "#/" ++ toString id
+
+
+fromUrl : String -> Result String NoteId
+fromUrl url =
+    String.toInt (String.dropLeft 2 url)
+
+
+urlParser : Navigation.Parser (Result String NoteId)
+urlParser =
+    Navigation.makeParser (fromUrl << .hash)
 
 
 
@@ -47,11 +69,18 @@ type alias Markdown =
     String
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( Model initialPosts (firstKey initialPosts ? 1) False
-    , Cmd.none
-    )
+init : Result String NoteId -> ( Model, Cmd Msg )
+init result =
+    let
+        activeId =
+            case result of
+                Ok id ->
+                    id
+
+                Err _ ->
+                    firstKey initialPosts ? 1
+    in
+        ( Model initialPosts activeId False, Cmd.none )
 
 
 initialPosts : Notes
@@ -83,7 +112,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SetActive id ->
-            ( { model | activeId = id }, Cmd.none )
+            ( { model | activeId = id }, Navigation.newUrl (toUrl id) )
 
         ToggleEditing ->
             ( { model | isEditing = not model.isEditing }, Cmd.none )
@@ -112,6 +141,16 @@ updateTitle newTitle note =
 updateBody : Markdown -> Maybe Note -> Maybe Note
 updateBody newBody note =
     Maybe.map (\note -> { note | body = newBody }) note
+
+
+urlUpdate : Result String NoteId -> Model -> ( Model, Cmd Msg )
+urlUpdate result model =
+    case result of
+        Ok newId ->
+            ( { model | activeId = newId }, Cmd.none )
+
+        Err _ ->
+            ( model, Navigation.modifyUrl (toUrl model.activeId) )
 
 
 

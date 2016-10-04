@@ -1,6 +1,5 @@
 module Main exposing (..)
 
-import Debug
 import Dict exposing (Dict)
 import Html exposing (..)
 import Html.App as App

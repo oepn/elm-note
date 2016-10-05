@@ -169,7 +169,7 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     div [ class "section" ]
-        [ css "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.2.1/css/bulma.min.css"
+        [ css "./bulma.css"
         , div [ class "container" ]
             [ div [ class "columns" ]
                 [ div [ class "column is-one-third" ]

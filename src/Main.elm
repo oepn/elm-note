@@ -172,18 +172,14 @@ view model =
         [ css "./bulma.css"
         , div [ class "container" ]
             [ div [ class "columns" ]
-                [ div [ class "column is-one-third" ]
+                [ div
+                    [ visibleWhen (not model.isEditing) "column is-one-third" ]
                     [ noteList model.notes ]
-                , div [ class "column is-two-thirds" ]
+                , div [ class "column" ]
                     [ note model ]
                 ]
             ]
         ]
-
-
-css : String -> Html msg
-css path =
-    node "link" [ rel "stylesheet", href path ] []
 
 
 noteList : Notes -> Html Msg
@@ -205,14 +201,28 @@ note { notes, activeId, isEditing } =
         note : Note
         note =
             Dict.get activeId notes ? emptyNote
+    in
+        div [ class "columns" ]
+            [ div [ class "column" ]
+                [ div [ class "card is-fullwidth" ]
+                    [ noteViewer note
+                    , footer [ visibleWhen (not isEditing) "card-footer" ]
+                        [ noteButton isEditing ]
+                    ]
+                ]
+            , div [ visibleWhen isEditing "column is-half" ]
+                [ div [ class "card is-fullwidth" ]
+                    [ noteEditor activeId note
+                    , footer [ class "card-footer" ]
+                        [ noteButton isEditing ]
+                    ]
+                ]
+            ]
 
-        noteInterface : Note -> Html Msg
-        noteInterface =
-            if isEditing then
-                noteEditor activeId
-            else
-                noteViewer
 
+noteButton : Bool -> Html Msg
+noteButton isEditing =
+    let
         buttonTitle : String
         buttonTitle =
             if isEditing then
@@ -220,13 +230,8 @@ note { notes, activeId, isEditing } =
             else
                 "Edit"
     in
-        div [ class "card is-fullwidth" ]
-            [ noteInterface note
-            , footer [ class "card-footer" ]
-                [ a [ class "card-footer-item", onClick ToggleEditing ]
-                    [ text buttonTitle ]
-                ]
-            ]
+        a [ class "card-footer-item", onClick ToggleEditing ]
+            [ text buttonTitle ]
 
 
 noteViewer : Note -> Html Msg
@@ -270,6 +275,27 @@ noteEditor noteId { title, body } =
                 [ text body ]
             ]
         ]
+
+
+
+-- VIEW HELPERS
+
+
+css : String -> Html msg
+css path =
+    node "link" [ rel "stylesheet", href path ] []
+
+
+visibleWhen : Bool -> String -> Attribute msg
+visibleWhen show classes =
+    let
+        newClasses =
+            if show then
+                classes
+            else
+                classes ++ " is-hidden"
+    in
+        class newClasses
 
 
 

@@ -78,13 +78,13 @@ init result =
                     id
 
                 Err _ ->
-                    firstKey initialPosts ? 1
+                    firstKey initialNotes ? 1
     in
-        ( Model initialPosts activeId False, Cmd.none )
+        ( Model initialNotes activeId False, Cmd.none )
 
 
-initialPosts : Notes
-initialPosts =
+initialNotes : Notes
+initialNotes =
     Dict.fromList <|
         [ ( 2, Note "Lorem Ipsum" """# Test
 Maecenas *feugiat* at elit sed gravida.""" )

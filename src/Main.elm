@@ -47,6 +47,7 @@ urlParser =
 type alias Model =
     { notes : Notes
     , activeId : NoteId
+    , activeNote : Note
     , isEditing : Bool
     }
 
@@ -80,7 +81,13 @@ init result =
                 Err _ ->
                     firstKey initialNotes ? 1
     in
-        ( Model initialNotes activeId False, Cmd.none )
+        ( { notes = initialNotes
+          , activeId = activeId
+          , activeNote = getNote activeId initialNotes
+          , isEditing = False
+          }
+        , Cmd.none
+        )
 
 
 initialNotes : Notes
@@ -104,43 +111,64 @@ emptyNote =
 type Msg
     = SetActive NoteId
     | ToggleEditing
-    | UpdateTitle NoteId String
-    | UpdateBody NoteId Markdown
+    | UpdateTitle String
+    | UpdateBody Markdown
+    | SaveActiveNote
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SetActive id ->
-            ( { model | activeId = id }, Navigation.newUrl (toUrl id) )
+            ( { model
+                | activeId = id
+                , activeNote = getNote id model.notes
+              }
+            , Navigation.newUrl (toUrl id)
+            )
 
         ToggleEditing ->
-            ( { model | isEditing = not model.isEditing }, Cmd.none )
-
-        UpdateTitle id title ->
-            ( { model | notes = updateNote id (updateTitle title) model.notes }
+            ( { model | isEditing = not model.isEditing }
             , Cmd.none
             )
 
-        UpdateBody id body ->
-            ( { model | notes = updateNote id (updateBody body) model.notes }
+        UpdateTitle title ->
+            ( { model | activeNote = updateTitle title model.activeNote }
+            , Cmd.none
+            )
+
+        UpdateBody body ->
+            ( { model | activeNote = updateBody body model.activeNote }
+            , Cmd.none
+            )
+
+        SaveActiveNote ->
+            ( { model
+                | notes = updateNote model.activeId model.activeNote model.notes
+                , isEditing = False
+              }
             , Cmd.none
             )
 
 
-updateNote : NoteId -> (Maybe Note -> Maybe Note) -> Notes -> Notes
-updateNote id alter notes =
-    Dict.update id alter notes
+getNote : NoteId -> Notes -> Note
+getNote id notes =
+    Dict.get id notes ? emptyNote
 
 
-updateTitle : String -> Maybe Note -> Maybe Note
+updateNote : NoteId -> Note -> Notes -> Notes
+updateNote id newNote notes =
+    Dict.update id (\_ -> Just newNote) notes
+
+
+updateTitle : String -> Note -> Note
 updateTitle newTitle note =
-    Maybe.map (\note -> { note | title = newTitle }) note
+    { note | title = newTitle }
 
 
-updateBody : Markdown -> Maybe Note -> Maybe Note
+updateBody : Markdown -> Note -> Note
 updateBody newBody note =
-    Maybe.map (\note -> { note | body = newBody }) note
+    { note | body = newBody }
 
 
 urlUpdate : Result String NoteId -> Model -> ( Model, Cmd Msg )
@@ -196,42 +224,39 @@ noteListEntry ( id, { title, body } ) =
 
 
 note : Model -> Html Msg
-note { notes, activeId, isEditing } =
+note { notes, activeId, activeNote, isEditing } =
     let
-        note : Note
-        note =
-            Dict.get activeId notes ? emptyNote
+        previewNote : Note
+        previewNote =
+            if isEditing then
+                activeNote
+            else
+                Dict.get activeId notes ? emptyNote
     in
         div [ class "columns" ]
             [ div [ class "column" ]
                 [ div [ class "card is-fullwidth" ]
-                    [ noteViewer note
+                    [ noteViewer previewNote
                     , footer [ visibleWhen (not isEditing) "card-footer" ]
-                        [ noteButton isEditing ]
+                        [ noteButton "Edit" ToggleEditing ]
                     ]
                 ]
             , div [ visibleWhen isEditing "column is-half" ]
                 [ div [ class "card is-fullwidth" ]
-                    [ noteEditor activeId note
+                    [ noteEditor activeNote
                     , footer [ class "card-footer" ]
-                        [ noteButton isEditing ]
+                        [ noteButton "Cancel" ToggleEditing
+                        , noteButton "Save" SaveActiveNote
+                        ]
                     ]
                 ]
             ]
 
 
-noteButton : Bool -> Html Msg
-noteButton isEditing =
-    let
-        buttonTitle : String
-        buttonTitle =
-            if isEditing then
-                "Save"
-            else
-                "Edit"
-    in
-        a [ class "card-footer-item", onClick ToggleEditing ]
-            [ text buttonTitle ]
+noteButton : String -> Msg -> Html Msg
+noteButton title msg =
+    a [ class "card-footer-item", onClick msg ]
+        [ text title ]
 
 
 noteViewer : Note -> Html Msg
@@ -253,8 +278,8 @@ markdownOptions =
         { options | sanitize = True }
 
 
-noteEditor : NoteId -> Note -> Html Msg
-noteEditor noteId { title, body } =
+noteEditor : Note -> Html Msg
+noteEditor { title, body } =
     div [ class "card-content" ]
         [ label [ class "label" ] [ text "Title" ]
         , p [ class "control" ]
@@ -262,7 +287,7 @@ noteEditor noteId { title, body } =
                 [ type' "text"
                 , class "input"
                 , value title
-                , onInput (UpdateTitle noteId)
+                , onInput UpdateTitle
                 ]
                 []
             ]
@@ -270,7 +295,7 @@ noteEditor noteId { title, body } =
         , p [ class "control" ]
             [ textarea
                 [ class "textarea"
-                , onInput (UpdateBody noteId)
+                , onInput UpdateBody
                 ]
                 [ text body ]
             ]

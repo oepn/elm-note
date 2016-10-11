@@ -110,10 +110,12 @@ emptyNote =
 
 type Msg
     = SetActive NoteId
-    | ToggleEditing
+    | StartEditing
+    | StopEditing
     | UpdateTitle String
     | UpdateBody Markdown
     | SaveActiveNote
+    | SaveAndCloseActiveNote
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -127,10 +129,16 @@ update msg model =
             , Navigation.newUrl (toUrl id)
             )
 
-        ToggleEditing ->
-            ( { model | isEditing = not model.isEditing }
+        StartEditing ->
+            ( { model
+                | activeNote = getNote model.activeId model.notes
+                , isEditing = True
+              }
             , Cmd.none
             )
+
+        StopEditing ->
+            ( { model | isEditing = False }, Cmd.none )
 
         UpdateTitle title ->
             ( { model | activeNote = updateTitle title model.activeNote }
@@ -143,12 +151,12 @@ update msg model =
             )
 
         SaveActiveNote ->
-            ( { model
-                | notes = updateNote model.activeId model.activeNote model.notes
-                , isEditing = False
-              }
+            ( { model | notes = updateNote model.activeId model.activeNote model.notes }
             , Cmd.none
             )
+
+        SaveAndCloseActiveNote ->
+            update SaveActiveNote model |> fst |> update StopEditing
 
 
 getNote : NoteId -> Notes -> Note
@@ -238,18 +246,20 @@ note { notes, activeId, activeNote, isEditing } =
                 [ div [ class "card is-fullwidth" ]
                     [ noteViewer previewNote
                     , footer [ visibleWhen (not isEditing) "card-footer" ]
-                        [ noteButton "Edit" ToggleEditing ]
+                        [ noteButton "Edit" StartEditing ]
                     ]
                 ]
-            , div [ visibleWhen isEditing "column is-half" ]
-                [ div [ class "card is-fullwidth" ]
-                    [ noteEditor activeNote
-                    , footer [ class "card-footer" ]
-                        [ noteButton "Cancel" ToggleEditing
-                        , noteButton "Save" SaveActiveNote
+            , renderWhen isEditing <|
+                div
+                    [ class "column is-half" ]
+                    [ div [ class "card is-fullwidth" ]
+                        [ noteEditor activeNote
+                        , footer [ class "card-footer" ]
+                            [ noteButton "Cancel" StopEditing
+                            , noteButton "Save" SaveAndCloseActiveNote
+                            ]
                         ]
                     ]
-                ]
             ]
 
 
@@ -321,6 +331,14 @@ visibleWhen show classes =
                 classes ++ " is-hidden"
     in
         class newClasses
+
+
+renderWhen : Bool -> Html msg -> Html msg
+renderWhen show html =
+    if show then
+        html
+    else
+        text ""
 
 
 

@@ -156,7 +156,7 @@ update msg model =
             )
 
         SaveAndCloseActiveNote ->
-            update SaveActiveNote model |> fst |> update StopEditing
+            batchUpdate model [ SaveActiveNote, StopEditing ]
 
 
 getNote : NoteId -> Notes -> Note
@@ -353,3 +353,21 @@ renderWhen show html =
 firstKey : Dict comparable v -> Maybe comparable
 firstKey =
     Dict.toList >> List.map fst >> List.head
+
+
+batchUpdate : Model -> List Msg -> ( Model, Cmd Msg )
+batchUpdate model msgs =
+    let
+        ( model, cmds ) =
+            List.foldl batchStep ( model, [ Cmd.none ] ) msgs
+    in
+        ( model, Cmd.batch cmds )
+
+
+batchStep : Msg -> ( Model, List (Cmd Msg) ) -> ( Model, List (Cmd Msg) )
+batchStep msg ( model, cmds ) =
+    let
+        ( newModel, cmd ) =
+            update msg model
+    in
+        ( newModel, cmds ++ [ cmd ] )
